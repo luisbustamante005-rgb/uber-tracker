@@ -12,11 +12,10 @@ function saveCfg(o) { localStorage.setItem(CFG_KEY, JSON.stringify(o)); }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let cfg = loadCfg();
-let DATA = { viajes: [], gastos: [] }; // cache from Sheets
+let DATA = { viajes: [], gastos: [] };
 let currentTab = 'dashboard';
 
 // ── FONDOS DISTRIBUCIÓN (%) ───────────────────────────────────────────────────
-// Ajustable — igual que en tu Excel Uber_definitivo
 const FONDOS_PCT = {
   Viaje:       0.30,
   Mantención:  0.20,
@@ -35,9 +34,9 @@ const fmtH = min => {
 };
 const today = () => {
   const d = new Date();
-  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  return d.toISOString().split('T')[0];
 };
-const monthOf = d => d.substring(0, 7); // YYYY-MM
+const monthOf = d => d ? String(d).substring(0, 7) : '';
 const currMonth = () => monthOf(today());
 
 function showToast(msg, type = 'ok', ms = 2800) {
@@ -86,7 +85,7 @@ $('btnSaveConfig').addEventListener('click', () => {
   cfg = { scriptUrl: url, name: name || 'Luis' };
   saveCfg(cfg);
   $('configModal').classList.remove('open');
-  showToast('✅ Configuración guardada', 'ok');
+  showToast('Configuracion guardada', 'ok');
   loadData();
 });
 
@@ -103,32 +102,47 @@ async function apiPost(payload) {
   if (!cfg.scriptUrl) throw new Error('Sin configurar');
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // Apps Script require text/plain para CORS
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
+// ── NORMALIZAR datos de Sheets ────────────────────────────────────────────────
+function normalizeRow(row) {
+  const out = {};
+  for (const [k, v] of Object.entries(row)) {
+    const key = k.charAt(0).toLowerCase() + k.slice(1);
+    out[key] = (v === '' || v === null || v === undefined) ? v
+      : (!isNaN(v) && v !== '') ? Number(v) : v;
+  }
+  if (out.fecha && typeof out.fecha === 'string' && out.fecha.includes('T')) {
+    out.fecha = out.fecha.split('T')[0];
+  }
+  return out;
+}
+
+// ── CARGAR DATOS desde Sheets ─────────────────────────────────────────────────
 async function loadData() {
   if (!cfg.scriptUrl) {
-    setSyncBar('⬤ Sin configurar — ve a ⚙ para conectar tu Google Sheet');
+    setSyncBar('Sin configurar — ve a configuracion');
     return;
   }
-  setSyncBar('⏳ Sincronizando…');
+  setSyncBar('Sincronizando...');
   try {
     const data = await apiGet();
     if (data && data.viajes) {
-      DATA.viajes = data.viajes || [];
-      DATA.gastos  = data.gastos  || [];
+      DATA.viajes = (data.viajes || []).map(normalizeRow);
+      DATA.gastos  = (data.gastos  || []).map(normalizeRow);
     }
     const now = new Date();
-    setSyncBar(`⬤ Sincronizado · ${now.toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'})}`, 'ok');
+    setSyncBar('Sincronizado ' + now.toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'}), 'ok');
     renderDashboard();
     renderFuelStats();
     if (currentTab === 'historial') renderHistorial();
   } catch(e) {
-    setSyncBar('⬤ Error al conectar con Google Sheets', 'error');
+    setSyncBar('Error al conectar con Google Sheets', 'error');
     showToast('Error: ' + e.message, 'err');
   }
 }
@@ -140,7 +154,7 @@ function initDateDefaults() {
   $('todayDate').textContent = new Date().toLocaleDateString('es-CL', {weekday:'short', day:'numeric', month:'short'});
 }
 
-// ── CALCULAR HORAS (viaje) ────────────────────────────────────────────────────
+// ── CALCULAR HORAS ────────────────────────────────────────────────────────────
 function calcViajePreview() {
   const ini   = $('vHoraInicio').value;
   const fin   = $('vHoraFin').value;
@@ -152,17 +166,16 @@ function calcViajePreview() {
     const [ih, im] = ini.split(':').map(Number);
     const [fh, fm] = fin.split(':').map(Number);
     let mins = (fh * 60 + fm) - (ih * 60 + im);
-    if (mins < 0) mins += 24 * 60; // pasó medianoche
+    if (mins < 0) mins += 24 * 60;
     const hrs = mins / 60;
     $('calcHoras').textContent    = fmtH(mins);
-    $('calcPorHora').textContent  = hrs > 0 ? fmt(total / hrs) : '–';
+    $('calcPorHora').textContent  = hrs > 0 ? fmt(total / hrs) : '-';
   } else {
-    $('calcHoras').textContent    = '–';
-    $('calcPorHora').textContent  = '–';
+    $('calcHoras').textContent    = '-';
+    $('calcPorHora').textContent  = '-';
   }
-  $('calcTotal').textContent = total > 0 ? fmt(total) : '–';
+  $('calcTotal').textContent = total > 0 ? fmt(total) : '-';
 
-  // Distribución fondos preview
   if (total > 0) {
     const dp = $('distPreview');
     dp.innerHTML = '';
@@ -220,15 +233,11 @@ $('btnGuardarViaje').addEventListener('click', async () => {
   try {
     if (cfg.scriptUrl) {
       await apiPost(row);
-    } else {
-      // Sin conexión → guardar local
-      DATA.viajes.push(row);
     }
     DATA.viajes.push(row);
-    $('vFeedback').textContent = '✅ Viaje guardado';
+    $('vFeedback').textContent = 'Viaje guardado';
     $('vFeedback').className = 'form-feedback ok';
     showToast('Viaje guardado correctamente', 'ok');
-    // Reset form
     $('vHoraInicio').value = '';
     $('vHoraFin').value = '';
     $('vCantidad').value = '';
@@ -239,7 +248,7 @@ $('btnGuardarViaje').addEventListener('click', async () => {
     calcViajePreview();
     renderDashboard();
   } catch(e) {
-    $('vFeedback').textContent = '❌ Error: ' + e.message;
+    $('vFeedback').textContent = 'Error: ' + e.message;
     $('vFeedback').className = 'form-feedback err';
   } finally {
     $('btnViajeText').style.display = 'inline';
@@ -248,7 +257,6 @@ $('btnGuardarViaje').addEventListener('click', async () => {
 });
 
 // ── GUARDAR GASTO ─────────────────────────────────────────────────────────────
-// Mostrar/ocultar campo litros
 $('gCategoria').addEventListener('change', () => {
   $('gLitrosGroup').style.display = $('gCategoria').value === 'Bencina' ? 'block' : 'none';
 });
@@ -279,11 +287,9 @@ $('btnGuardarGasto').addEventListener('click', async () => {
   try {
     if (cfg.scriptUrl) {
       await apiPost(row);
-    } else {
-      DATA.gastos.push(row);
     }
     DATA.gastos.push(row);
-    $('gFeedback').textContent = '✅ Gasto guardado';
+    $('gFeedback').textContent = 'Gasto guardado';
     $('gFeedback').className = 'form-feedback ok';
     showToast('Gasto guardado correctamente', 'ok');
     $('gMonto').value = '';
@@ -292,7 +298,7 @@ $('btnGuardarGasto').addEventListener('click', async () => {
     renderDashboard();
     renderFuelStats();
   } catch(e) {
-    $('gFeedback').textContent = '❌ Error: ' + e.message;
+    $('gFeedback').textContent = 'Error: ' + e.message;
     $('gFeedback').className = 'form-feedback err';
   } finally {
     $('btnGastoText').style.display = 'inline';
@@ -303,12 +309,10 @@ $('btnGuardarGasto').addEventListener('click', async () => {
 // ── RENDER DASHBOARD ──────────────────────────────────────────────────────────
 function renderDashboard() {
   const mes = currMonth();
-
-  // filtrar por mes actual
   const viajes = DATA.viajes.filter(v => monthOf(v.fecha) === mes);
   const gastos  = DATA.gastos.filter(g => monthOf(g.fecha) === mes);
 
-  const totalBruto = viajes.reduce((s, v) => s + (v.total || 0), 0);
+  const totalBruto  = viajes.reduce((s, v) => s + (v.total || 0), 0);
   const totalGasto  = gastos.reduce((s, g) => s + (g.monto || 0), 0);
   const totalNeto   = totalBruto - totalGasto;
   const totalHoras  = viajes.reduce((s, v) => s + (v.horas || 0), 0);
@@ -318,45 +322,41 @@ function renderDashboard() {
   $('kpiIngresos').textContent      = fmt(totalBruto);
   $('kpiIngresosTrips').textContent  = numViajes + ' viajes';
   $('kpiNeto').textContent           = fmt(totalNeto);
-  $('kpiNetoDelta').textContent      = '−' + fmt(totalGasto) + ' gastos';
+  $('kpiNetoDelta').textContent      = '-' + fmt(totalGasto) + ' gastos';
   $('kpiPorHora').textContent        = fmt(porHora);
   $('kpiPorHoraHoras').textContent   = totalHoras.toFixed(1) + ' hrs conducidas';
   $('kpiGastos').textContent         = fmt(totalGasto);
 
-  // Fondos acumulados (sobre ingresos brutos mes)
   for (const [fond, pct] of Object.entries(FONDOS_PCT)) {
     const card = document.querySelector(`.fund-card[data-fund="${fond}"]`);
     if (!card) continue;
     const amt = totalBruto * pct;
     card.querySelector('.fund-amount').textContent = fmt(amt);
-    // bar: fill relativo al mayor fondo
     const maxFond = totalBruto * Math.max(...Object.values(FONDOS_PCT));
     card.querySelector('.fund-fill').style.width = maxFond > 0 ? Math.round(amt / maxFond * 100) + '%' : '0%';
   }
 
-  // Today
   const todayStr = today();
   const vHoy = DATA.viajes.filter(v => v.fecha === todayStr);
-  const ingHoy = vHoy.reduce((s, v) => s + (v.total || 0), 0);
-  const hrsHoy = vHoy.reduce((s, v) => s + (v.horas || 0), 0);
+  const ingHoy   = vHoy.reduce((s, v) => s + (v.total || 0), 0);
+  const hrsHoy   = vHoy.reduce((s, v) => s + (v.horas || 0), 0);
   const tripsHoy = vHoy.reduce((s, v) => s + (v.cantidadViajes || 1), 0);
 
-  $('tdViajes').textContent   = vHoy.length ? tripsHoy : '–';
-  $('tdIngresos').textContent = vHoy.length ? fmt(ingHoy) : '–';
-  $('tdHoras').textContent    = vHoy.length ? hrsHoy.toFixed(1) + 'h' : '–';
-  $('tdPorHora').textContent  = (vHoy.length && hrsHoy > 0) ? fmt(ingHoy / hrsHoy) : '–';
+  $('tdViajes').textContent   = vHoy.length ? tripsHoy : '-';
+  $('tdIngresos').textContent = vHoy.length ? fmt(ingHoy) : '-';
+  $('tdHoras').textContent    = vHoy.length ? hrsHoy.toFixed(1) + 'h' : '-';
+  $('tdPorHora').textContent  = (vHoy.length && hrsHoy > 0) ? fmt(ingHoy / hrsHoy) : '-';
 }
 
 // ── RENDER FUEL STATS ─────────────────────────────────────────────────────────
 function renderFuelStats() {
   const mes = currMonth();
   const bencinas = DATA.gastos.filter(g => g.fecha && monthOf(g.fecha) === mes && g.categoria === 'Bencina');
-  const total = bencinas.reduce((s, g) => s + (g.monto || 0), 0);
-  const litros = bencinas.reduce((s, g) => s + (g.litros || 0), 0);
+  const total    = bencinas.reduce((s, g) => s + (g.monto  || 0), 0);
+  const litros   = bencinas.reduce((s, g) => s + (g.litros || 0), 0);
   const porLitro = litros > 0 ? total / litros : 0;
-
   const ingTotal = DATA.viajes.filter(v => monthOf(v.fecha) === mes).reduce((s, v) => s + (v.total || 0), 0);
-  const pct = ingTotal > 0 ? Math.round(total / ingTotal * 100) : 0;
+  const pct      = ingTotal > 0 ? Math.round(total / ingTotal * 100) : 0;
 
   $('fuelTotal').textContent    = fmt(total);
   $('fuelLitros').textContent   = litros.toFixed(1) + ' L';
@@ -372,24 +372,24 @@ function renderHistorial() {
 
   const items = tipo === 'viajes'
     ? DATA.viajes.filter(v => !mes || monthOf(v.fecha) === mes)
-        .sort((a, b) => b.fecha.localeCompare(a.fecha))
+        .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
     : DATA.gastos.filter(g => !mes || monthOf(g.fecha) === mes)
-        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+        .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
 
   if (items.length === 0) {
-    list.innerHTML = '<div class="empty-state">Sin registros para este período</div>';
+    list.innerHTML = '<div class="empty-state">Sin registros para este periodo</div>';
     return;
   }
 
   list.innerHTML = items.map(item => {
     if (tipo === 'viajes') {
-      const pct_h = item.horas > 0 ? fmt(item.total / item.horas) : '–';
+      const ph = item.horas > 0 ? fmt(item.total / item.horas) : '-';
       return `
         <div class="hist-item">
-          <div class="hist-icon">${item.turno === 'Mañana' ? '🌅' : item.turno === 'Noche' ? '🌙' : '☀️'}</div>
+          <div class="hist-icon">${item.turno === 'Manana' || item.turno === 'Mañana' ? '🌅' : item.turno === 'Noche' ? '🌙' : '☀️'}</div>
           <div class="hist-info">
-            <div class="hist-main">${formatFecha(item.fecha)} · ${item.horaInicio || ''} – ${item.horaFin || ''}</div>
-            <div class="hist-meta">${item.cantidadViajes || '?'} viajes · ${item.horas?.toFixed(1) || '?'}h · ${pct_h}/hr · ${item.turno}</div>
+            <div class="hist-main">${formatFecha(item.fecha)} · ${item.horaInicio || ''} - ${item.horaFin || ''}</div>
+            <div class="hist-meta">${item.cantidadViajes || '?'} viajes · ${Number(item.horas||0).toFixed(1)}h · ${ph}/hr · ${item.turno || ''}</div>
           </div>
           <div class="hist-amount income">${fmt(item.total)}</div>
         </div>`;
@@ -399,9 +399,9 @@ function renderHistorial() {
           <div class="hist-icon">${categoryIcon(item.categoria)}</div>
           <div class="hist-info">
             <div class="hist-main">${item.categoria} · ${formatFecha(item.fecha)}</div>
-            <div class="hist-meta">Fondo: ${item.fondo}${item.litros ? ' · ' + item.litros + ' L' : ''}${item.notas ? ' · ' + item.notas : ''}</div>
+            <div class="hist-meta">Fondo: ${item.fondo || '-'}${item.litros ? ' · ' + item.litros + ' L' : ''}${item.notas ? ' · ' + item.notas : ''}</div>
           </div>
-          <div class="hist-amount expense">−${fmt(item.monto)}</div>
+          <div class="hist-amount expense">-${fmt(item.monto)}</div>
         </div>`;
     }
   }).join('');
@@ -409,28 +409,31 @@ function renderHistorial() {
 
 function formatFecha(f) {
   if (!f) return '?';
-  const [y, m, d] = f.split('-');
-  return `${d}/${m}/${y}`;
+  const s = String(f);
+  if (s.includes('-')) {
+    const [y, m, d] = s.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return s;
 }
+
 function categoryIcon(c) {
-  return { Bencina:'⛽', Peaje:'🛣', Mantención:'🔧', Lavado:'🚿', Seguro:'🛡', TAG:'📡', 'Revisión Técnica':'🔍', Otro:'📦' }[c] || '📦';
+  return { Bencina:'⛽', Peaje:'🛣', 'Mantención':'🔧', Lavado:'🚿', Seguro:'🛡', TAG:'📡', 'Revisión Técnica':'🔍', Otro:'📦' }[c] || '📦';
 }
 
 $('histTipo').addEventListener('change', renderHistorial);
 $('histMes').addEventListener('change', renderHistorial);
 
-// Populate histMes with last 6 months
 function populateHistMes() {
   const sel = $('histMes');
   const d = new Date();
   for (let i = 0; i < 6; i++) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
-    const val = `${y}-${m}`;
     const opt = document.createElement('option');
-    opt.value = val;
+    opt.value = `${y}-${m}`;
     opt.textContent = new Date(y, d.getMonth(), 1).toLocaleDateString('es-CL', {month:'long', year:'numeric'});
-    if (i > 0) sel.appendChild(opt); // i=0 es "este mes" (opción default ya existe)
+    if (i > 0) sel.appendChild(opt);
     d.setMonth(d.getMonth() - 1);
   }
 }
@@ -438,7 +441,7 @@ function populateHistMes() {
 // ── REFRESH ───────────────────────────────────────────────────────────────────
 $('btnRefresh').addEventListener('click', () => {
   loadData();
-  showToast('Actualizando…');
+  showToast('Actualizando...');
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -447,10 +450,10 @@ populateHistMes();
 calcViajePreview();
 renderDashboard();
 renderFuelStats();
-$('gLitrosGroup').style.display = 'none'; // litros solo visible para bencina
+$('gLitrosGroup').style.display = 'none';
 
 if (cfg.scriptUrl) {
   loadData();
 } else {
-  setSyncBar('⬤ Sin configurar — ve a ⚙ para conectar tu Google Sheet');
+  setSyncBar('Sin configurar — ve a configuracion');
 }
