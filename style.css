@@ -50,7 +50,7 @@ body {
   padding: 0.75rem 1rem;
 }
 .logo-block { display: flex; align-items: center; gap: 0.6rem; }
-.logo-icon { font-size: 1.4rem; }
+.logo-icon { font-size: 1.1rem; }
 .logo-title {
   font-family: var(--font-display);
   font-size: 1.1rem;
@@ -142,8 +142,6 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
-  max-width: 400px;
-  margin: 0 auto;
 }
 
 .kpi-card {
@@ -153,7 +151,7 @@ body {
   padding: 1rem 0.9rem 0.9rem;
   position: relative;
   overflow: hidden;
-  height: 130px;
+  height: 90px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -179,7 +177,7 @@ body {
 }
 .kpi-value {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
