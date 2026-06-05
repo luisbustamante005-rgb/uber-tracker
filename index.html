@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- HEADER -->
+
   <header class="app-header">
     <div class="header-inner">
       <div class="logo-block">
@@ -21,13 +21,11 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="btn-icon" id="btnRefresh" title="Actualizar datos">↻</button>
+        <button class="btn-icon" id="btnRefresh" title="Actualizar">↻</button>
         <button class="btn-icon" id="btnConfig" title="Configuración">⚙</button>
       </div>
     </div>
-    <div class="sync-bar" id="syncBar">
-      <span id="syncStatus">⬤ Sin configurar — ve a ⚙ para conectar tu Google Sheet</span>
-    </div>
+    <div class="sync-bar" id="syncBar">⬤ Sin configurar — ve a ⚙</div>
   </header>
 
   <!-- CONFIG MODAL -->
@@ -38,36 +36,37 @@
         <button class="btn-close" id="closeConfig">✕</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">Pega la URL de tu Google Apps Script Web App. <a href="#guide" id="showGuide">¿Cómo obtenerla?</a></p>
+        <p class="modal-desc">Pega la URL de tu Google Apps Script Web App. <a href="#" id="showGuide">¿Cómo obtenerla?</a></p>
         <div class="field-group">
           <label>URL del Apps Script</label>
           <input type="url" id="cfgScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" />
         </div>
         <div class="field-group">
-          <label>Tu nombre (opcional)</label>
-          <input type="text" id="cfgName" placeholder="Luis" />
+          <label>Meta mensual ($)</label>
+          <input type="number" id="cfgMeta" placeholder="720000" />
+        </div>
+        <div class="field-group">
+          <label>Días activos por mes</label>
+          <input type="number" id="cfgDias" placeholder="20" />
         </div>
         <button class="btn-primary full-width" id="btnSaveConfig">💾 Guardar configuración</button>
-
         <div class="guide-box" id="guideBox" style="display:none">
           <h3>📋 Pasos para conectar Google Sheets</h3>
           <ol>
-            <li>Crea un Google Sheet nuevo y nómbralo <strong>UberTracker</strong></li>
-            <li>Ve a <strong>Extensiones → Apps Script</strong></li>
-            <li>Borra el contenido y pega el código del archivo <code>apps-script.gs</code> (incluido en este paquete)</li>
-            <li>Guarda el script (💾 o Ctrl+S)</li>
-            <li>Click en <strong>Implementar → Nueva implementación</strong></li>
-            <li>Tipo: <strong>Aplicación web</strong></li>
-            <li>Ejecutar como: <strong>Yo</strong> | Acceso: <strong>Cualquier persona</strong></li>
-            <li>Click en <strong>Implementar</strong> y autoriza los permisos</li>
-            <li>Copia la URL que aparece y pégala arriba ↑</li>
+            <li>Crea un Google Sheet nuevo: <strong>UberTracker</strong></li>
+            <li><strong>Extensiones → Apps Script</strong></li>
+            <li>Borra el contenido y pega el código de <code>apps-script.gs</code></li>
+            <li>Guarda con Ctrl+S</li>
+            <li><strong>Implementar → Nueva implementación</strong></li>
+            <li>Tipo: <strong>Aplicación web</strong> · Ejecutar como: <strong>Yo</strong> · Acceso: <strong>Cualquier persona</strong></li>
+            <li>Copia la URL y pégala arriba</li>
           </ol>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MAIN TABS -->
+  <!-- TABS -->
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
     <button class="tab-btn" data-tab="viaje">🚗 Viaje</button>
@@ -75,83 +74,117 @@
     <button class="tab-btn" data-tab="historial">📋 Historial</button>
   </nav>
 
-  <!-- MAIN CONTENT -->
   <main class="main-content">
 
-    <!-- TAB: DASHBOARD -->
+    <!-- ══ DASHBOARD ══ -->
     <section class="tab-panel active" id="tab-dashboard">
-      <div class="section-title">Resumen del mes</div>
 
-      <!-- KPI Grid -->
-      <div class="kpi-grid">
-        <div class="kpi-card accent-green">
-          <div class="kpi-label">Ingresos brutos</div>
-          <div class="kpi-value" id="kpiIngresos">$0</div>
-          <div class="kpi-delta" id="kpiIngresosTrips">0 viajes</div>
-        </div>
-        <div class="kpi-card accent-blue">
-          <div class="kpi-label">Ingreso neto</div>
-          <div class="kpi-value" id="kpiNeto">$0</div>
-          <div class="kpi-delta" id="kpiNetoDelta">−$0 gastos</div>
-        </div>
-        <div class="kpi-card accent-yellow">
-          <div class="kpi-label">$/hora promedio</div>
-          <div class="kpi-value" id="kpiPorHora">$0</div>
-          <div class="kpi-delta" id="kpiPorHoraHoras">0 hrs conducidas</div>
-        </div>
-        <div class="kpi-card accent-red">
-          <div class="kpi-label">Gastos totales</div>
-          <div class="kpi-value" id="kpiGastos">$0</div>
-          <div class="kpi-delta" id="kpiGastosDetalle">bencina + auto</div>
+      <!-- BLOQUE 1: META DEL MES -->
+      <div class="db-section">
+        <div class="db-section-title">Meta del mes</div>
+        <div class="hero-card">
+          <div class="hero-top">
+            <div>
+              <div class="db-label">Ingresos acumulados</div>
+              <div class="hero-ingreso" id="dbHeroIngreso">$0</div>
+              <div class="hero-meta-lbl">Meta: <span id="dbHeroMeta">$720.000</span></div>
+            </div>
+            <div class="hero-badge" id="dbHeroBadge">
+              <div class="hero-badge-pct" id="dbHeroPct">0%</div>
+              <div class="hero-badge-lbl">del mes</div>
+            </div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="dbProgressFill" style="width:0%"></div>
+          </div>
+          <div class="hero-bottom">
+            <div class="hero-stat"><strong id="dbRestante">$0</strong> restantes</div>
+            <div class="hero-stat"><strong id="dbDiasRestantes">–</strong> días hábiles</div>
+            <div class="hero-stat"><strong id="dbNecesarioDia">–</strong>/día</div>
+          </div>
         </div>
       </div>
 
-      <!-- Fondos distribution -->
-      <div class="section-title mt-lg">Fondos acumulados</div>
-      <div class="funds-grid" id="fundsGrid">
-        <div class="fund-card" data-fund="Viaje">
-          <div class="fund-name">✈ Viaje</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
-        </div>
-        <div class="fund-card" data-fund="Mantención">
-          <div class="fund-name">🔧 Mantención</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
-        </div>
-        <div class="fund-card" data-fund="Universidad">
-          <div class="fund-name">📚 Universidad</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
-        </div>
-        <div class="fund-card" data-fund="Emergencia">
-          <div class="fund-name">🛟 Emergencia</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
-        </div>
-        <div class="fund-card" data-fund="Peajes">
-          <div class="fund-name">🛣 Peajes</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
-        </div>
-        <div class="fund-card" data-fund="Casa">
-          <div class="fund-name">🏠 Casa</div>
-          <div class="fund-amount">$0</div>
-          <div class="fund-bar"><div class="fund-fill" style="width:0%"></div></div>
+      <!-- BLOQUE 2: HOY -->
+      <div class="db-section">
+        <div class="db-section-title">Hoy — <span id="dbHoyFecha"></span></div>
+        <div class="turno-grid">
+          <div class="turno-card highlight">
+            <div class="db-label">Ingresos hoy</div>
+            <div class="turno-val green" id="dbHoyIngresos">–</div>
+            <div class="turno-delta" id="dbHoyDelta">–</div>
+          </div>
+          <div class="turno-card">
+            <div class="db-label">$/hora promedio</div>
+            <div class="turno-val amber" id="dbHoyPorHora">–</div>
+            <div class="turno-delta" id="dbHoyHoras">–</div>
+          </div>
+          <div class="turno-card">
+            <div class="db-label">Viajes</div>
+            <div class="turno-val" id="dbHoyViajes">–</div>
+            <div class="turno-delta" id="dbHoyTurnos">–</div>
+          </div>
+          <div class="turno-card">
+            <div class="db-label">Neto hoy</div>
+            <div class="turno-val" id="dbHoyNeto">–</div>
+            <div class="turno-delta" id="dbHoyGasto">–</div>
+          </div>
         </div>
       </div>
 
-      <!-- Today summary -->
-      <div class="section-title mt-lg">Hoy <span id="todayDate" class="date-badge"></span></div>
-      <div class="today-box" id="todayBox">
-        <div class="today-stat"><span>Viajes</span><strong id="tdViajes">–</strong></div>
-        <div class="today-stat"><span>Ingresos</span><strong id="tdIngresos">–</strong></div>
-        <div class="today-stat"><span>Horas</span><strong id="tdHoras">–</strong></div>
-        <div class="today-stat"><span>$/hora</span><strong id="tdPorHora">–</strong></div>
+      <!-- BLOQUE 3: SEMANA -->
+      <div class="db-section">
+        <div class="db-section-title">Esta semana</div>
+        <div class="chart-wrap">
+          <div class="chart-bars" id="chartBars"></div>
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:#f5a623"></span><span class="legend-lbl">Hoy</span></span>
+            <span><span class="legend-dot" style="background:#2dd36f66"></span><span class="legend-lbl">Sobre meta</span></span>
+            <span><span class="legend-dot" style="background:#2e2e2e"></span><span class="legend-lbl">Bajo meta</span></span>
+          </div>
+        </div>
       </div>
+
+      <!-- BLOQUE 4: FONDOS -->
+      <div class="db-section">
+        <div class="db-section-title">Fondos acumulados</div>
+        <div class="fondos-grid" id="fondosGrid">
+          <div class="fondo-card" data-fund="Viaje">
+            <div class="fondo-name">✈ Viaje</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+          <div class="fondo-card" data-fund="Mantención">
+            <div class="fondo-name">🔧 Mantención</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+          <div class="fondo-card" data-fund="Universidad">
+            <div class="fondo-name">📚 Universidad</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+          <div class="fondo-card" data-fund="Emergencia">
+            <div class="fondo-name">🛟 Emergencia</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+          <div class="fondo-card" data-fund="Peajes">
+            <div class="fondo-name">🛣 Peajes</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+          <div class="fondo-card" data-fund="Casa">
+            <div class="fondo-name">🏠 Casa</div>
+            <div class="fondo-amt">$0</div>
+            <div class="fondo-bar"><div class="fondo-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
-    <!-- TAB: REGISTRAR VIAJE -->
+    <!-- ══ VIAJE ══ -->
     <section class="tab-panel" id="tab-viaje">
       <div class="section-title">Registrar viaje</div>
       <div class="form-card">
@@ -171,7 +204,7 @@
         </div>
         <div class="field-row">
           <div class="field-group">
-            <label>Nº de viajes</label>
+            <label>Nº viajes</label>
             <input type="number" id="vCantidad" min="0" placeholder="0" />
           </div>
           <div class="field-group">
@@ -185,29 +218,34 @@
             <input type="number" id="vPropinas" min="0" placeholder="0" />
           </div>
           <div class="field-group">
-            <label>Peajes pagados ($)</label>
+            <label>Peajes ($)</label>
             <input type="number" id="vPeajes" min="0" placeholder="0" />
           </div>
         </div>
-        <div class="field-group">
-          <label>Turno</label>
-          <select id="vTurno">
-            <option value="Mañana">🌅 Mañana</option>
-            <option value="Tarde">☀️ Tarde</option>
-            <option value="Noche">🌙 Noche</option>
-          </select>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Km recorridos</label>
+            <input type="number" id="vKm" min="0" placeholder="0" />
+          </div>
+          <div class="field-group">
+            <label>Turno</label>
+            <select id="vTurno">
+              <option value="Mañana">🌅 Mañana</option>
+              <option value="Tarde">☀️ Tarde</option>
+              <option value="Noche">🌙 Noche</option>
+            </select>
+          </div>
         </div>
         <div class="field-group">
           <label>Notas (opcional)</label>
-          <input type="text" id="vNotas" placeholder="Ej: lluvia, partido, etc." />
+          <input type="text" id="vNotas" placeholder="Ej: lluvia, partido, zona norte" />
         </div>
-
         <div class="calc-preview" id="vCalcPreview">
           <div class="calc-row"><span>Horas conducidas</span><strong id="calcHoras">–</strong></div>
           <div class="calc-row"><span>$/hora</span><strong id="calcPorHora">–</strong></div>
+          <div class="calc-row"><span>$/km</span><strong id="calcPorKm">–</strong></div>
           <div class="calc-row highlight"><span>Total bruto</span><strong id="calcTotal">–</strong></div>
         </div>
-
         <button class="btn-primary full-width" id="btnGuardarViaje">
           <span id="btnViajeText">💾 Guardar viaje</span>
           <span class="spinner" id="vSpinner" style="display:none">⏳</span>
@@ -215,14 +253,13 @@
         <div class="form-feedback" id="vFeedback"></div>
       </div>
 
-      <!-- Distribución de fondos preview -->
-      <div class="section-title mt-lg">Distribución estimada</div>
+      <div class="section-title mt-lg">Distribución de fondos</div>
       <div class="dist-preview" id="distPreview">
-        <div class="dist-note">Registra un viaje para ver la distribución</div>
+        <div class="dist-note">Ingresa los datos del viaje para ver la distribución</div>
       </div>
     </section>
 
-    <!-- TAB: REGISTRAR GASTO -->
+    <!-- ══ GASTO ══ -->
     <section class="tab-panel" id="tab-gasto">
       <div class="section-title">Registrar gasto</div>
       <div class="form-card">
@@ -248,8 +285,8 @@
             <label>Monto ($)</label>
             <input type="number" id="gMonto" min="0" placeholder="0" />
           </div>
-          <div class="field-group" id="gLitrosGroup">
-            <label>Litros (si bencina)</label>
+          <div class="field-group" id="gLitrosGroup" style="display:none">
+            <label>Litros</label>
             <input type="number" id="gLitros" min="0" step="0.1" placeholder="0.0" />
           </div>
         </div>
@@ -261,14 +298,13 @@
             <option value="Viaje">✈ Viaje</option>
             <option value="Emergencia">🛟 Emergencia</option>
             <option value="Casa">🏠 Casa</option>
-            <option value="Sin fondo">❌ Sin fondo (gasto directo)</option>
+            <option value="Sin fondo">❌ Sin fondo</option>
           </select>
         </div>
         <div class="field-group">
           <label>Notas (opcional)</label>
           <input type="text" id="gNotas" placeholder="Ej: carga completa, cambio aceite" />
         </div>
-
         <button class="btn-primary full-width" id="btnGuardarGasto">
           <span id="btnGastoText">💾 Guardar gasto</span>
           <span class="spinner" id="gSpinner" style="display:none">⏳</span>
@@ -276,9 +312,8 @@
         <div class="form-feedback" id="gFeedback"></div>
       </div>
 
-      <!-- Bencina stats -->
-      <div class="section-title mt-lg">Stats de bencina (este mes)</div>
-      <div class="fuel-stats" id="fuelStats">
+      <div class="section-title mt-lg">Bencina este mes</div>
+      <div class="fuel-stats">
         <div class="fuel-stat"><span>Total gastado</span><strong id="fuelTotal">$0</strong></div>
         <div class="fuel-stat"><span>Total litros</span><strong id="fuelLitros">0 L</strong></div>
         <div class="fuel-stat"><span>$/litro prom.</span><strong id="fuelPorLitro">$0</strong></div>
@@ -286,21 +321,18 @@
       </div>
     </section>
 
-    <!-- TAB: HISTORIAL -->
+    <!-- ══ HISTORIAL ══ -->
     <section class="tab-panel" id="tab-historial">
       <div class="historial-header">
         <div class="section-title">Historial</div>
         <div class="hist-filters">
-          <select id="histMes">
-            <option value="">Este mes</option>
-          </select>
+          <select id="histMes"><option value="">Este mes</option></select>
           <select id="histTipo">
             <option value="viajes">Viajes</option>
             <option value="gastos">Gastos</option>
           </select>
         </div>
       </div>
-
       <div id="historialList" class="historial-list">
         <div class="empty-state">Cargando datos…</div>
       </div>
@@ -308,9 +340,7 @@
 
   </main>
 
-  <!-- TOAST -->
   <div class="toast" id="toast"></div>
-
   <script src="app.js"></script>
 </body>
 </html>
