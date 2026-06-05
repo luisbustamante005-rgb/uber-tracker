@@ -142,6 +142,8 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .kpi-card {
