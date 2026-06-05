@@ -50,7 +50,7 @@ body {
   padding: 0.75rem 1rem;
 }
 .logo-block { display: flex; align-items: center; gap: 0.6rem; }
-.logo-icon { font-size: 2rem; }
+.logo-icon { font-size: 3rem; }
 .logo-title {
   font-family: var(--font-display);
   font-size: 1.1rem;
@@ -178,7 +178,7 @@ body {
 }
 .kpi-value {
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 3rem;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
