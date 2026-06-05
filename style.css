@@ -142,6 +142,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  max-width: 360px;
 }
 
 .kpi-card {
@@ -151,7 +152,7 @@ body {
   padding: 1rem 0.9rem 0.9rem;
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1 / 0.85;
+  height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -192,13 +193,14 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
+  max-width: 360px;
 }
 .fund-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.85rem;
-  aspect-ratio: 1 / 0.75;
+  height: 90px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
