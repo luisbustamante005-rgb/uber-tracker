@@ -56,14 +56,15 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     initSheets(ss);
 
-    if (payload.type === 'viaje') {
+    const tipo = payload.type || payload.action || '';
+    if (tipo === 'viaje') {
       appendViaje(ss, payload);
-    } else if (payload.type === 'gasto') {
+    } else if (tipo === 'gasto') {
       appendGasto(ss, payload);
-    } else if (payload.type === 'delete') {
+    } else if (tipo === 'delete') {
       deleteRow(ss, payload.sheet, payload.rowIndex);
     } else {
-      throw new Error('Tipo desconocido: ' + payload.type);
+      throw new Error('Tipo desconocido: ' + tipo);
     }
 
     return ContentService

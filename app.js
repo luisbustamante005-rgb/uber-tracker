@@ -83,7 +83,7 @@ async function apiPost(payload) {
   return res.json();
 }
 async function deleteRecord(tipo, rowIndex) {
-  const res = await fetch(cfg.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'delete', sheet: tipo, rowIndex }) });
+  const res = await fetch(cfg.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete', sheet: tipo, rowIndex }) });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
