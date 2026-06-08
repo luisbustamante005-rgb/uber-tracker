@@ -234,7 +234,10 @@ function renderWeekChart(metaDiaria) {
   for (let i = 0; i < 7; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + startOffset + i);
-    weekDays.push(d.toISOString().split('T')[0]);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    weekDays.push(`${y}-${m}-${day}`);
   }
 
   const maxVal = metaDiaria * 1.5;
@@ -246,7 +249,7 @@ function renderWeekChart(metaDiaria) {
     const isFuture = dateStr > todayStr;
     const isGood = ing >= metaDiaria && !isToday;
     const barClass = isToday ? 'chart-bar today' : isGood ? 'chart-bar good' : 'chart-bar';
-    const dayIdx = new Date(dateStr).getDay();
+    const dayIdx = new Date(dateStr + 'T12:00:00').getDay();
     const dayLabel = dias[dayIdx];
     return `
       <div class="chart-bar-wrap">
