@@ -133,17 +133,32 @@ function deleteRow(ss, sheetName, timestamp) {
   if (!sh) throw new Error('Hoja no encontrada: ' + sheetName);
   const data = sh.getDataRange().getValues();
   const tsStr = String(timestamp).trim();
-  // Buscar en todas las columnas de cada fila
+  Logger.log('Buscando timestamp: ' + tsStr);
+  Logger.log('Total filas: ' + data.length);
+  // Timestamp es siempre la ultima columna
+  const lastCol = data[0].length - 1;
   for (let i = data.length - 1; i >= 1; i--) {
-    for (let j = 0; j < data[i].length; j++) {
-      if (String(data[i][j]).trim() === tsStr) {
-        sh.deleteRow(i + 1);
-        SpreadsheetApp.flush();
-        return;
-      }
+    const cellVal = String(data[i][lastCol]).trim();
+    Logger.log('Fila ' + i + ' timestamp: ' + cellVal);
+    if (cellVal === tsStr) {
+      sh.deleteRow(i + 1);
+      SpreadsheetApp.flush();
+      Logger.log('Fila eliminada: ' + (i + 1));
+      return;
     }
   }
-  throw new Error('Registro no encontrado con timestamp: ' + tsStr);
+  // Si no encontro, intentar busqueda parcial (primeros 19 chars = hasta segundos)
+  const tsShort = tsStr.substring(0, 19);
+  for (let i = data.length - 1; i >= 1; i--) {
+    const cellShort = String(data[i][lastCol]).trim().substring(0, 19);
+    if (cellShort === tsShort) {
+      sh.deleteRow(i + 1);
+      SpreadsheetApp.flush();
+      Logger.log('Fila eliminada por match parcial: ' + (i + 1));
+      return;
+    }
+  }
+  Logger.log('Registro no encontrado');
 }
 
 // ── Leer hoja como array de objetos ───────────────────
