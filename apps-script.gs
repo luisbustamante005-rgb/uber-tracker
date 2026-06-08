@@ -53,6 +53,8 @@ function doGet(e) {
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
+Logger.log('PAYLOAD RECIBIDO: ' + JSON.stringify(payload));
+return ContentService.createTextOutput(JSON.stringify({ok:true, debug: payload})).setMimeType(ContentService.MimeType.JSON);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     initSheets(ss);
 
