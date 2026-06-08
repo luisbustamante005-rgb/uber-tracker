@@ -82,8 +82,8 @@ async function apiPost(payload) {
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
-async function deleteRecord(tipo, timestamp) {
-  const res = await fetch(cfg.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'delete', sheet: tipo, timestamp }) });
+async function deleteRecord(tipo, rowIndex) {
+  const res = await fetch(cfg.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ type: 'delete', sheet: tipo, rowIndex }) });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
@@ -399,12 +399,17 @@ function renderHistorial() {
 
   if (items.length === 0) { list.innerHTML = '<div class="empty-state">Sin registros para este periodo</div>'; return; }
 
-  list.innerHTML = items.map((item, idx) => {
-    const ts = item.timestamp || idx;
+  // Guardar índices originales antes de filtrar
+  const allItems = tipo === 'viajes' ? DATA.viajes : DATA.gastos;
+
+  list.innerHTML = items.map((item) => {
+    // Índice real en el array original (fila en Sheets = índice + 2, por header)
+    const origIdx = allItems.indexOf(item);
+    const rowIndex = origIdx + 2;
     if (tipo === 'viajes') {
       const ph = item.horas > 0 ? fmt(item.total/item.horas) : '–';
       const kmStr = item.km > 0 ? ` · ${item.km} km` : '';
-      return `<div class="hist-item" data-ts="${ts}">
+      return `<div class="hist-item" data-row="${rowIndex}" data-orig="${origIdx}">
         <div class="hist-icon">${item.turno==='Mañana'||item.turno==='Manana'?'🌅':item.turno==='Noche'?'🌙':'☀️'}</div>
         <div class="hist-info">
           <div class="hist-main">${formatFecha(item.fecha)} · ${item.horaInicio||''} - ${item.horaFin||''}</div>
@@ -412,10 +417,10 @@ function renderHistorial() {
         </div>
         <div class="hist-right">
           <div class="hist-amount income">${fmt(item.total)}</div>
-          <button class="btn-delete" data-ts="${ts}" data-tipo="viajes">🗑</button>
+          <button class="btn-delete" data-row="${rowIndex}" data-orig="${origIdx}" data-tipo="viajes">🗑</button>
         </div></div>`;
     } else {
-      return `<div class="hist-item" data-ts="${ts}">
+      return `<div class="hist-item" data-row="${rowIndex}" data-orig="${origIdx}">
         <div class="hist-icon">${categoryIcon(item.categoria)}</div>
         <div class="hist-info">
           <div class="hist-main">${item.categoria} · ${formatFecha(item.fecha)}</div>
@@ -423,21 +428,22 @@ function renderHistorial() {
         </div>
         <div class="hist-right">
           <div class="hist-amount expense">-${fmt(item.monto)}</div>
-          <button class="btn-delete" data-ts="${ts}" data-tipo="gastos">🗑</button>
+          <button class="btn-delete" data-row="${rowIndex}" data-orig="${origIdx}" data-tipo="gastos">🗑</button>
         </div></div>`;
     }
   }).join('');
 
   list.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const ts = btn.dataset.ts;
+      const rowIndex = parseInt(btn.dataset.row);
+      const origIdx  = parseInt(btn.dataset.orig);
       const t2 = btn.dataset.tipo;
       if (!confirm('¿Eliminar este registro?')) return;
       btn.textContent = '⏳'; btn.disabled = true;
       try {
-        if (cfg.scriptUrl) await deleteRecord(t2, ts);
-        if (t2 === 'viajes') DATA.viajes = DATA.viajes.filter(v => String(v.timestamp) !== String(ts));
-        else DATA.gastos = DATA.gastos.filter(g => String(g.timestamp) !== String(ts));
+        if (cfg.scriptUrl) await deleteRecord(t2, rowIndex);
+        if (t2 === 'viajes') DATA.viajes.splice(origIdx, 1);
+        else DATA.gastos.splice(origIdx, 1);
         showToast('Registro eliminado', 'ok');
         renderHistorial(); renderDashboard(); renderFuelStats();
       } catch(e) {

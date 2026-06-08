@@ -61,7 +61,7 @@ function doPost(e) {
     } else if (payload.type === 'gasto') {
       appendGasto(ss, payload);
     } else if (payload.type === 'delete') {
-      deleteRow(ss, payload.sheet, payload.timestamp);
+      deleteRow(ss, payload.sheet, payload.rowIndex);
     } else {
       throw new Error('Tipo desconocido: ' + payload.type);
     }
@@ -127,38 +127,14 @@ function appendGasto(ss, d) {
   ]);
 }
 
-// ── Eliminar fila por timestamp ───────────────────────
-function deleteRow(ss, sheetName, timestamp) {
+// ── Eliminar fila por numero de fila ──────────────────
+function deleteRow(ss, sheetName, rowIndex) {
   const sh = ss.getSheetByName(sheetName === 'viajes' ? SHEET_VIAJES : SHEET_GASTOS);
   if (!sh) throw new Error('Hoja no encontrada: ' + sheetName);
-  const data = sh.getDataRange().getValues();
-  const tsStr = String(timestamp).trim();
-  Logger.log('Buscando timestamp: ' + tsStr);
-  Logger.log('Total filas: ' + data.length);
-  // Timestamp es siempre la ultima columna
-  const lastCol = data[0].length - 1;
-  for (let i = data.length - 1; i >= 1; i--) {
-    const cellVal = String(data[i][lastCol]).trim();
-    Logger.log('Fila ' + i + ' timestamp: ' + cellVal);
-    if (cellVal === tsStr) {
-      sh.deleteRow(i + 1);
-      SpreadsheetApp.flush();
-      Logger.log('Fila eliminada: ' + (i + 1));
-      return;
-    }
-  }
-  // Si no encontro, intentar busqueda parcial (primeros 19 chars = hasta segundos)
-  const tsShort = tsStr.substring(0, 19);
-  for (let i = data.length - 1; i >= 1; i--) {
-    const cellShort = String(data[i][lastCol]).trim().substring(0, 19);
-    if (cellShort === tsShort) {
-      sh.deleteRow(i + 1);
-      SpreadsheetApp.flush();
-      Logger.log('Fila eliminada por match parcial: ' + (i + 1));
-      return;
-    }
-  }
-  Logger.log('Registro no encontrado');
+  const maxRow = sh.getLastRow();
+  if (rowIndex < 2 || rowIndex > maxRow) throw new Error('Fila fuera de rango: ' + rowIndex);
+  sh.deleteRow(rowIndex);
+  SpreadsheetApp.flush();
 }
 
 // ── Leer hoja como array de objetos ───────────────────
