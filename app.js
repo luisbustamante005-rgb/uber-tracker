@@ -441,12 +441,17 @@ function renderHistorial() {
       if (!confirm('¿Eliminar este registro?')) return;
       btn.textContent = '⏳'; btn.disabled = true;
       try {
-        if (cfg.scriptUrl) await deleteRecord(t2, rowIndex);
+        console.log('Intentando borrar:', t2, 'fila:', rowIndex);
+        if (cfg.scriptUrl) {
+          const result = await deleteRecord(t2, rowIndex);
+          console.log('Respuesta del script:', JSON.stringify(result));
+        }
         if (t2 === 'viajes') DATA.viajes.splice(origIdx, 1);
         else DATA.gastos.splice(origIdx, 1);
         showToast('Registro eliminado', 'ok');
         renderHistorial(); renderDashboard(); renderFuelStats();
       } catch(e) {
+        console.log('Error al borrar:', e.message);
         showToast('Error: ' + e.message, 'err');
         btn.textContent = '🗑'; btn.disabled = false;
       }
