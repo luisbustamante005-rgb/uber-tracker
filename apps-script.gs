@@ -130,16 +130,20 @@ function appendGasto(ss, d) {
 // ── Eliminar fila por timestamp ───────────────────────
 function deleteRow(ss, sheetName, timestamp) {
   const sh = ss.getSheetByName(sheetName === 'viajes' ? SHEET_VIAJES : SHEET_GASTOS);
-  if (!sh) return;
+  if (!sh) throw new Error('Hoja no encontrada: ' + sheetName);
   const data = sh.getDataRange().getValues();
-  // Timestamp está en la última columna
+  const tsStr = String(timestamp).trim();
+  // Buscar en todas las columnas de cada fila
   for (let i = data.length - 1; i >= 1; i--) {
-    const rowTs = String(data[i][data[i].length - 1]);
-    if (rowTs === String(timestamp)) {
-      sh.deleteRow(i + 1); // +1 porque las filas en Sheets empiezan en 1
-      return;
+    for (let j = 0; j < data[i].length; j++) {
+      if (String(data[i][j]).trim() === tsStr) {
+        sh.deleteRow(i + 1);
+        SpreadsheetApp.flush();
+        return;
+      }
     }
   }
+  throw new Error('Registro no encontrado con timestamp: ' + tsStr);
 }
 
 // ── Leer hoja como array de objetos ───────────────────
